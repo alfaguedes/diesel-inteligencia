@@ -1,0 +1,8 @@
+{
+  "meta": {
+    "status": "pending_first_run",
+    "source": "ANP",
+    "note": "Ainda sem dados importados. Execute manualmente o workflow 'Atualizar dados oficiais da ANP'."
+  },
+  "records": []
+}
