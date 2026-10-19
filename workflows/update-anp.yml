@@ -1,0 +1,54 @@
+name: Atualizar dados da ANP e publicar o site
+
+on:
+  push:
+    branches: ["main"]
+  schedule:
+    # Verificação diária às 12:15 UTC (09:15 em Brasília, normalmente).
+    - cron: "15 12 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "diesel-inteligencia"
+  cancel-in-progress: false
+
+jobs:
+  refresh-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Verificar publicação da ANP e atualizar histórico
+        run: python scripts/update_anp.py
+      - name: Salvar dados atualizados no histórico do repositório
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/
+          if git diff --cached --quiet; then
+            echo "Sem mudanças nos dados processados."
+          else
+            git commit -m "Atualiza dados oficiais de diesel ANP"
+            git push
+          fi
+      - name: Configurar GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Preparar arquivos do site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "."
+      - name: Publicar site
+        id: deployment
+        uses: actions/deploy-pages@v4
